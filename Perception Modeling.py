@@ -171,6 +171,9 @@ def Tactorp_within(x):
    a = np.mod(np.floor(v*M),N)
    b = np.mod((1+a),N)
    xp = v*M - a
+   if xp > 1.0:
+      xp = 1
+   
    return xp
 
 #function computes the xp value based upon the xp from within-interval (not correct) 
@@ -188,7 +191,7 @@ def intensity_estimate(x):
    l = (x[1])/(x[0]+x[1])
    p = (x[1]**2)/((x[0]**2)+(x[1]**2))
    #creating xp with an attempt to scale based on which section its in (do not think this is ok)
-   xp = [l*(x[2]/8), p*(x[2]/8)]
+   xp = [l, p]
    return xp
 
 #set only one participant data type for testing methodology
@@ -238,6 +241,9 @@ while k<=len(angles)-1:
    motor_xpp.append(xpp)
    k = k + 1
 
+print(motor_xpl)
+print("\n")
+print(motor_xpp)
 #multiple tactor math test for models
 """
 N = 8. #number of tactors in the system
@@ -262,6 +268,7 @@ print(test, a, b, xp, I0l, I1l, xpl, I0p, I1p, xpp)
 #finding model estimations using angles to get intensity and estimated xp (bad method)
 """
 modela_data = [Tactorp_within(item) for item in angles]
+#print(modela_data)
 modelr_data = [perception_model(item) for item in modela_data]
 lin_modelr_data = []
 po_modelr_data = []
@@ -287,5 +294,5 @@ plt.show()
 fig2 = plt.figure("Figure 2")
 plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1])
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red")
-plt.plot(angles_model, motor_xpp, label = "Power Model", color = "k")
+plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k")
 plt.show()
