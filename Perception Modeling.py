@@ -3,6 +3,7 @@ import numpy as np
 from numpy import genfromtxt
 import matplotlib
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 #import needed libraries above
 
 """
@@ -364,11 +365,29 @@ stdsl = np.std(epsilonsl)
 stdsp = np.std(epsilonsp)
 stddl = np.std(epsilondl)
 stddp = np.std(epsilondp)
+
+varsl = np.var(epsilonsl)
+varsp = np.var(epsilonsp)
+vardl = np.var(epsilondl)
+vardp = np.var(epsilondp)
+
+st = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
+dt = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
+
 print("L Mean","L STD", "P Mean","P STD")
 print("\n")
 print(meansl, stdsl ,meansp, stdsp)
 print("\n")
 print(meandl, stddl ,meandp, stddp)
+print("\n")
+print("Medians")
+print(medsl, medsp, meddl, meddp)
+print("\n")
+print(varsl, varsp, vardl, vardp)
+print("\n")
+print(st)
+print("\n")
+print(dt)
 #print statements for testing
 #print(angles)
 #print("\n")
