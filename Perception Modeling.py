@@ -430,4 +430,3 @@ plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=15)
 plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
-
