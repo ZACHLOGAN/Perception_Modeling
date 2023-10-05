@@ -1,11 +1,8 @@
 import csv
 import numpy as np
 from numpy import genfromtxt
-import math
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy.optimize import fsolve
-from scipy.optimize import minimize_scalar
 #import needed libraries above
 
 """
@@ -81,9 +78,6 @@ filetypes = {
 filetypes = {
     1:"participant018_computed.csv"}
 
-#global variables for log solver
-I0 = 0
-I1 = 0
 #function for doing the angle calculation
 #tactor_spot is used for computing the ratio for the location of the xp value according to the tactor pair in use
 def Arduino_Mag(angle):
@@ -174,47 +168,12 @@ def value_normalizing(x):
    normalized = (x - des_min)/(des_max-des_min)
    return normalized
 
-
-#function for computing the within interval xp value
-def Tactorp_within(x):
-   N=8
-   M=8
-   v = x/360.0
-   a = np.mod(np.floor(v*M),N)
-   b = np.mod((1+a),N)
-   xp = v*M - a
-   if xp > 1.0:
-      xp = 1
-   
-   return xp
-
-#function computes the xp value based upon the xp from within-interval (not correct) 
-def perception_model(x):
-   I0l = 1 - x
-   I1l = x
-   I0p = np.sqrt(1-x)
-   I1p = np.sqrt(x)
-   xpl = I1l/(I0l+I1l)
-   xpp = I1p**2/(I0p**2 + I1p**2)
-   return [xpl, xpp]
-
-def log_estimate(x):
-   return (((1+x)**I0)-((2-x)**I1))**2
-
 #estimate xp based on motor intensity from Arduino_Mag function
 def intensity_estimate(x):
-   #save parts to global variable
-   global I0
-   I0 = x[0]
-   global I1
-   I1 = x[1]
    #within interval linear model estimation
    lw = (x[1])/(x[0]+x[1])
    #within interval power model estimation
    pw = (x[1]**2)/((x[0]**2)+(x[1]**2))
-   #within interval log model estimatation
-   gw = minimize_scalar(log_estimate, bounds = (0,1), method = "Bounded")
-   #print(gw.x)
    #place variables for denoting the scaling level based on tactor pair loaction
    smax = 1
    smin = 0
@@ -248,14 +207,14 @@ def intensity_estimate(x):
    l = (lw * (smax-smin)) + smin
    p = (pw * (smax-smin)) + smin
    #combine into a single varible for easier use
-   xp = [l, p, gw]
+   xp = [l, p]
    return xp
 
 #set only one participant data type for testing methodology
 Data = genfromtxt(DIR+filetypes[1],delimiter=',',dtype=float)
 
 #angles used in experiment including 0 and 360 for completing model lines
-angles = [0, 15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345, 360]
+angles = [15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345]
 
 #normalize the angles according to 0-360 scale
 normal_angles = [value_normalizing(item) for item in angles]
@@ -270,25 +229,34 @@ normal_angles_stat = []
 normal_response_stat = []
 normal_angles_dyn = []
 normal_response_dyn = []
+angles_stat = []
+angles_dyn = []
+angles_statr = []
+angles_dynr = []
 i = 0
 while i <= len(Data)-1:
    if (Data[i][0] == 0):
       normal_angles_stat.append(value_normalizing(Data[i][1]))
       normal_response_stat.append(value_normalizing(Data[i][5]))
+      angles_stat.append(Data[i][1])
+      angles_statr.append(Data[i][5])
    elif(Data[i][0] == 1):
       normal_angles_dyn.append(value_normalizing(Data[i][1]))
       normal_response_dyn.append(value_normalizing(Data[i][5]))
+      angles_dyn.append(Data[i][1])
+      angles_dynr.append(Data[i][5])
    i = i + 1
 
 #converting normalized angle data into combined lists for easy ploting
-normal_data_stat =[normal_angles_stat, normal_response_stat]
-normal_data_dyn = [normal_angles_dyn, normal_response_dyn]
+normal_data_stat =[normal_angles_stat, normal_response_stat, angles_stat, angles_statr]
+normal_data_dyn = [normal_angles_dyn, normal_response_dyn, angles_dyn, angles_dynr]
 
 #find xp for linear and power using motor intensity
-motor_xpl = []
-motor_xpp = []
+#motor_xpl = []
+#motor_xpp = []
 motor_xplm = []
 motor_xppm = []
+"""
 k = 0
 while k<=len(angles)-1:
    val = Arduino_Mag(angles[k])
@@ -298,7 +266,7 @@ while k<=len(angles)-1:
    motor_xpl.append(xll)
    motor_xpp.append(xpp)
    k = k + 1
-
+"""
 nq = 0
 while nq<=len(angles_model)-1:
    val = Arduino_Mag(angles_model[nq])
@@ -307,10 +275,89 @@ while nq<=len(angles_model)-1:
    xpp = est[1]
    motor_xplm.append(xll)
    motor_xppm.append(xpp)
-   k = k + 1
+   nq = nq + 1
 
+#compute decoding error for against the models using while loop
+decode = 0
+epsilonsl = []
+epsilonsp = []
+epsilondl = []
+epsilondp = []
+while decode <= len(normal_response_stat)-1:
+   #computing static error
+   valsd = Arduino_Mag(angles_stat[decode])
+   estsd = intensity_estimate(valsd)
+   xllsd = estsd[0]
+   xppsd = estsd[1]
+   errsl = normal_response_stat[decode] - xllsd
+   errsp = normal_response_stat[decode] - xppsd
 
+   #wrapping of error on 0-1 scale for static linear
+   if (errsl > 0.5 or errsl < -0.5):
+      if (angles_stat[decode] < 180):
+         errorsl = 1 + normal_response_stat[decode] - xllsd
+         epsilonsl.append(np.absolute(errorsl))
+      elif(angles_stat[decode] > 180):
+         errorsl = 1 - normal_response_stat[decode] - xllsd
+         epsilonsl.append(np.absolute(errorsl))
+   else:
+      epsilonsl.append(np.absolute(errsl))
+   #wrapping error on 0-1 scale for static power
+   if (errsp > 0.5 or errsp < -0.5):
+      if (angles_stat[decode] < 180):
+         errorsp = 1 + normal_response_stat[decode] - xppsd
+         epsilonsp.append(np.absolute(errorsp))
+      elif(angles_stat[decode] > 180):
+         errorsp = 1 - normal_response_stat[decode] - xppsd
+         epsilonsp.append(np.absolute(errorsp))
+   else:
+      epsilonsp.append(np.absolute(errsp))
+      
+   #computing dynamic error
+   valdd = Arduino_Mag(angles_dyn[decode])
+   estdd = intensity_estimate(valdd)
+   xlldd = estdd[0]
+   xppdd = estdd[1]
+   errdl = normal_response_dyn[decode] - xlldd
+   errdp = normal_response_dyn[decode] - xppdd
+   #wrapping of error on 0-1 scale for dynamic linear
+   if (errdl > 0.5 or errdl < -0.5):
+      if (angles_dyn[decode] < 180):
+         errordl = 1 + normal_response_dyn[decode] - xlldd
+         epsilondl.append(np.absolute(errordl))
+      elif(angles_dyn[decode] > 180):
+         errordl = 1 - normal_response_dyn[decode] - xlldd
+         epsilondl.append(np.absolute(errordl))
+   else:
+      epsilondl.append(np.absolute(errdl))
 
+   #wrapping error on 0-1 scale for dynamic power
+   if (errdp > 0.5 or errdp < -0.5):
+      if (angles_dyn[decode] < 180):
+         errordp = 1 + normal_response_dyn[decode] - xppdd
+         epsilondp.append(np.absolute(errordp))
+      elif(angles_dyn[decode] > 180):
+         errordp = 1 - normal_response_dyn[decode] - xppdd
+         epsilondp.append(np.absolute(errordp))
+   else:
+      epsilondp.append(np.absolute(errdp))
+   decode = decode+1
+
+meansl = np.mean(epsilonsl)
+meansp = np.mean(epsilonsp)
+meandl = np.mean(epsilondl)
+meandp = np.mean(epsilondp)
+
+stdsl = np.std(epsilonsl)
+stdsp = np.std(epsilonsp)
+stddl = np.std(epsilondl)
+stddp = np.std(epsilondp)
+print("L Mean","L STD", "P Mean","P STD")
+print("\n")
+print(meansl, stdsl ,meansp, stdsp)
+print("\n")
+print(meandl, stddl ,meandp, stddp)
+#print statements for testing
 #print(angles)
 #print("\n")
 #print(normal_angles)
@@ -321,23 +368,27 @@ while nq<=len(angles_model)-1:
 
 #plotting data and perception models
 #plot of static data using trend lines of only experiment angles
+"""
 fig1 = plt.figure("Figure 1")
 plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
+"""
 #plot of static data using trendline with modeled angles
 fig2 = plt.figure("Figure 2")
 plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
 plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
+"""
 #plot of dynamic data using trend lines of only experiment angles
 fig3 = plt.figure("Figure 3")
 plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
+"""
 #plot of dynamic data using trendline with modeled angles
 fig4 = plt.figure("Figure 4")
 plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
