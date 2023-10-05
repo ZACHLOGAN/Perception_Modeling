@@ -319,37 +319,37 @@ while decode <= len(normal_response_stat)-1:
       epsilonsp.append(np.absolute(errsp))
    decode = decode+1
 
-decode = 0
-while decode <= len(normal_response_dyn)-1:
+decode2 = 0
+while decode2 <= len(normal_response_dyn)-1:
    #computing dynamic error
-   valdd = Arduino_Mag(angles_dyn[decode])
+   valdd = Arduino_Mag(angles_dyn[decode2])
    estdd = intensity_estimate(valdd)
    xlldd = estdd[0]
    xppdd = estdd[1]
-   errdl = normal_response_dyn[decode] - xlldd
-   errdp = normal_response_dyn[decode] - xppdd
+   errdl = normal_response_dyn[decode2] - xlldd
+   errdp = normal_response_dyn[decode2] - xppdd
    #wrapping of error on 0-1 scale for dynamic linear
    if (errdl > 0.5 or errdl < -0.5):
-      if (angles_dyn[decode] < 180):
-         errordl = 1 + normal_response_dyn[decode] - xlldd
+      if (angles_dyn[decode2] < 180):
+         errordl = 1 + normal_response_dyn[decode2] - xlldd
          epsilondl.append(np.absolute(errordl))
-      elif(angles_dyn[decode] > 180):
-         errordl = 1 - normal_response_dyn[decode] - xlldd
+      elif(angles_dyn[decode2] > 180):
+         errordl = 1 - normal_response_dyn[decode2] - xlldd
          epsilondl.append(np.absolute(errordl))
    else:
       epsilondl.append(np.absolute(errdl))
 
    #wrapping error on 0-1 scale for dynamic power
    if (errdp > 0.5 or errdp < -0.5):
-      if (angles_dyn[decode] < 180):
-         errordp = 1 + normal_response_dyn[decode] - xppdd
+      if (angles_dyn[decode2] < 180):
+         errordp = 1 + normal_response_dyn[decode2] - xppdd
          epsilondp.append(np.absolute(errordp))
-      elif(angles_dyn[decode] > 180):
-         errordp = 1 - normal_response_dyn[decode] - xppdd
+      elif(angles_dyn[decode2] > 180):
+         errordp = 1 - normal_response_dyn[decode2] - xppdd
          epsilondp.append(np.absolute(errordp))
    else:
       epsilondp.append(np.absolute(errdp))
-   decode = decode+1
+   decode2 = decode2+1
 
 meansl = np.mean(epsilonsl)
 meansp = np.mean(epsilonsp)
@@ -371,9 +371,10 @@ varsp = np.var(epsilonsp)
 vardl = np.var(epsilondl)
 vardp = np.var(epsilondp)
 
-st = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
-dt = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
-
+stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
+dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
+sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=True)
+spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=True)
 print("L Mean","L STD", "P Mean","P STD")
 print("\n")
 print(meansl, stdsl ,meansp, stdsp)
@@ -383,11 +384,14 @@ print("\n")
 print("Medians")
 print(medsl, medsp, meddl, meddp)
 print("\n")
-print(varsl, varsp, vardl, vardp)
+#print("\n")
+print(stlp)
 print("\n")
-print(st)
+print(dtlp)
 print("\n")
-print(dt)
+print(sldl)
+print("\n")
+print(spdp)
 #print statements for testing
 #print(angles)
 #print("\n")
