@@ -28,6 +28,27 @@ epsilon = |v-y|, v = desired response, y = user response
 #xp = vM-a
 #v is the mapping of 0-360, a and b are denoting tactor pairs for the needed phantom sensation, % is the modulo operator
 """
+#math for testing modulus
+"""
+N = 8. #number of tactors in the system
+M = 8. #number of segments between tactors in system
+
+test = 90./360.
+a = np.mod(np.floor(test*M),N)
+b = np.mod((1+a),N)
+xp = (test*M) - a
+
+
+I0l = 1 - xp
+I1l = xp
+
+I0p = np.sqrt(1-xp)
+I1p = np.sqrt(xp)
+
+xpl = I1l/(I0l+I1l)
+xpp = I1p**2/(I0p**2+I1p**2)
+print(test, a, b, xp, I0l, I1l, xpl, I0p, I1p, xpp)
+"""
 
 #file directory for data files
 DIR = "/Users/Zach/Documents/Modeling_for_Perception/"
@@ -153,18 +174,6 @@ def value_normalizing(x):
    normalized = (x - des_min)/(des_max-des_min)
    return normalized
 
-#value for mapping the motor amplitude intenities to 0-255
-def value_mapping(x):
-   amp_max = 360
-   amp_min = 0
-   norm_mag = (x - amp_min)/(amp_max-amp_min)
-   N=8
-   M=8
-   v = x/360.0
-   a = np.mod(np.floor(v*M),N)
-   b = np.mod((1+a),N)
-   xppp = v*M - a
-   return (xppp*((a+1)/8))
 
 #function for computing the within interval xp value
 def Tactorp_within(x):
@@ -205,7 +214,7 @@ def intensity_estimate(x):
    pw = (x[1]**2)/((x[0]**2)+(x[1]**2))
    #within interval log model estimatation
    gw = minimize_scalar(log_estimate, bounds = (0,1), method = "Bounded")
-   print(gw.x)
+   #print(gw.x)
    #place variables for denoting the scaling level based on tactor pair loaction
    smax = 1
    smin = 0
@@ -251,6 +260,11 @@ angles = [0, 15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 
 #normalize the angles according to 0-360 scale
 normal_angles = [value_normalizing(item) for item in angles]
 
+#creating angle set to make nice model lines
+angles_model = np.linspace(0,360,360)
+#normalizing the model angle set
+angles_modeln = [value_normalizing(item) for item in angles_model]
+
 #normalizing angles from static and dynamic trials split into desired and response process using while loops
 normal_angles_stat = []
 normal_response_stat = []
@@ -270,16 +284,11 @@ while i <= len(Data)-1:
 normal_data_stat =[normal_angles_stat, normal_response_stat]
 normal_data_dyn = [normal_angles_dyn, normal_response_dyn]
 
-#the code here is to try and make models scale nicely from 0-1 for all data (math does not work out)
-#creating angle set to make nice model lines
-angles_model = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5, 360]
-
-#print(angles)
-#print("\n")
-#print(normal_angles)
 #find xp for linear and power using motor intensity
 motor_xpl = []
 motor_xpp = []
+motor_xplm = []
+motor_xppm = []
 k = 0
 while k<=len(angles)-1:
    val = Arduino_Mag(angles[k])
@@ -289,61 +298,50 @@ while k<=len(angles)-1:
    motor_xpl.append(xll)
    motor_xpp.append(xpp)
    k = k + 1
+
+nq = 0
+while nq<=len(angles_model)-1:
+   val = Arduino_Mag(angles_model[nq])
+   est = intensity_estimate(val)
+   xll = est[0]
+   xpp = est[1]
+   motor_xplm.append(xll)
+   motor_xppm.append(xpp)
+   k = k + 1
+
+
+
+#print(angles)
+#print("\n")
+#print(normal_angles)
 #print("\n")
 #print(motor_xpl)
 #print("\n")
 #print(motor_xpp)
-#multiple tactor math test for models
-"""
-N = 8. #number of tactors in the system
-M = 8. #number of segments between tactors in system
-
-test = 90./360.
-a = np.mod(np.floor(test*M),N)
-b = np.mod((1+a),N)
-xp = (test*M) - a
-
-
-I0l = 1 - xp
-I1l = xp
-
-I0p = np.sqrt(1-xp)
-I1p = np.sqrt(xp)
-
-xpl = I1l/(I0l+I1l)
-xpp = I1p**2/(I0p**2+I1p**2)
-print(test, a, b, xp, I0l, I1l, xpl, I0p, I1p, xpp)
-"""
-#finding model estimations using angles to get intensity and estimated xp (bad method)
-"""
-modela_data = [Tactorp_within(item) for item in angles]
-#print(modela_data)
-modelr_data = [perception_model(item) for item in modela_data]
-lin_modelr_data = []
-po_modelr_data = []
-j = 0
-while j<= len(modelr_data) - 1:
-   lin_modelr_data.append(modelr_data[j][0])
-   po_modelr_data.append(modelr_data[j][1])
-   j = j + 1
-"""
-#creating trendlines using polyfit and poly1D (not useful for data)
-#z_stat = np.polyfit(normal_data_stat[:][0],normal_data_stat[:][1], 1)
-#p_stat = np.poly1d(z_stat)
-#z_dyn = np.polyfit(normal_data_dyn[:][0],normal_data_dyn[:][1], 1)
-#p_dyn = np.poly1d(z_dyn)
-
 
 #plotting data and perception models
+#plot of static data using trend lines of only experiment angles
 fig1 = plt.figure("Figure 1")
 plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
-
+#plot of static data using trendline with modeled angles
 fig2 = plt.figure("Figure 2")
+plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
+plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
+plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
+plt.show()
+#plot of dynamic data using trend lines of only experiment angles
+fig3 = plt.figure("Figure 3")
 plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
+plt.show()
+#plot of dynamic data using trendline with modeled angles
+fig4 = plt.figure("Figure 4")
+plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
+plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
+plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
 
