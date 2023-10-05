@@ -348,6 +348,11 @@ meansp = np.mean(epsilonsp)
 meandl = np.mean(epsilondl)
 meandp = np.mean(epsilondp)
 
+medsl = np.median(epsilonsl)
+medsp = np.median(epsilonsp)
+meddl = np.median(epsilondl)
+meddp = np.median(epsilondp)
+
 stdsl = np.std(epsilonsl)
 stdsp = np.std(epsilonsp)
 stddl = np.std(epsilondl)
