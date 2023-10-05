@@ -4,7 +4,8 @@ from numpy import genfromtxt
 import math
 import matplotlib
 import matplotlib.pyplot as plt
-from numpy.polynomial import Polynomial
+from scipy.optimize import fsolve
+from scipy.optimize import minimize_scalar
 #import needed libraries above
 
 """
@@ -59,7 +60,9 @@ filetypes = {
 filetypes = {
     1:"participant018_computed.csv"}
 
-
+#global variables for log solver
+I0 = 0
+I1 = 0
 #function for doing the angle calculation
 #tactor_spot is used for computing the ratio for the location of the xp value according to the tactor pair in use
 def Arduino_Mag(angle):
@@ -82,63 +85,63 @@ def Arduino_Mag(angle):
       Motor6 = 0
       Motor7 = 0
       Motor8 = 0
-      tactor_spot = 1
+      tactor_spot = 0
       Motor_Data = [Motor1, Motor2, tactor_spot]
 
    elif angle <= 45:
       speed = (45 - angle)/45
       Motor1 = speed
       Motor2 = 1 - speed
-      tactor_spot = 1
+      tactor_spot = 0
       Motor_Data = [Motor1, Motor2, tactor_spot]
 
    elif angle <= 90:
       speed = (90 - angle)/(90-45)
       Motor2 = speed
       Motor3 = 1 - speed
-      tactor_spot = 2
+      tactor_spot = 1
       Motor_Data = [Motor2, Motor3, tactor_spot]
 
    elif angle <= 135:
       speed = (135 - angle)/(135 - 90)
       Motor3 = speed
       Motor4 = 1 - speed
-      tactor_spot = 3
+      tactor_spot = 2
       Motor_Data = [Motor3, Motor4, tactor_spot]
 
    elif angle <= 180:
       speed = (180 - angle)/(180 - 135)
       Motor4 = speed
       Motor5 = 1 - speed
-      tactor_spot = 4
+      tactor_spot = 3
       Motor_Data = [Motor4, Motor5, tactor_spot]
 
    elif angle <= 225:
       speed = (225 - angle)/(225 - 180)
       Motor5 = speed
       Motor6 = 1 - speed
-      tactor_spot = 5
+      tactor_spot = 4
       Motor_Data = [Motor5, Motor6, tactor_spot]
 
    elif angle <= 270:
       speed = (270 - angle)/(270 - 225)
       Motor6 = speed
       Motor7 = 1 - speed
-      tactor_spot = 6
+      tactor_spot = 5
       Motor_Data = [Motor6, Motor7, tactor_spot]
 
    elif angle <= 315:
       speed = (315 - angle)/(315 - 270)
       Motor7 = speed
       Motor8 = 1 - speed
-      tactor_spot = 7
+      tactor_spot = 6
       Motor_Data = [Motor7, Motor8, tactor_spot]
 
    elif angle <= 360:
       speed = (360 - angle)/(360 - 315)
       Motor8 = speed
       Motor1 = 1 - speed
-      tactor_spot = 8
+      tactor_spot = 7
       Motor_Data = [Motor8, Motor1, tactor_spot]
       
    return Motor_Data
@@ -186,12 +189,57 @@ def perception_model(x):
    xpp = I1p**2/(I0p**2 + I1p**2)
    return [xpl, xpp]
 
+def log_estimate(x):
+   return (((1+x)**I0)-((2-x)**I1))**2
+
 #estimate xp based on motor intensity from Arduino_Mag function
 def intensity_estimate(x):
-   l = (x[1])/(x[0]+x[1])
-   p = (x[1]**2)/((x[0]**2)+(x[1]**2))
-   #creating xp with an attempt to scale based on which section its in (do not think this is ok)
-   xp = [l, p]
+   #save parts to global variable
+   global I0
+   I0 = x[0]
+   global I1
+   I1 = x[1]
+   #within interval linear model estimation
+   lw = (x[1])/(x[0]+x[1])
+   #within interval power model estimation
+   pw = (x[1]**2)/((x[0]**2)+(x[1]**2))
+   #within interval log model estimatation
+   gw = minimize_scalar(log_estimate, bounds = (0,1), method = "Bounded")
+   print(gw.x)
+   #place variables for denoting the scaling level based on tactor pair loaction
+   smax = 1
+   smin = 0
+   #scaling the data according to tactor pair location
+   match x[2]:
+      case 0:
+         smin = 0
+         smax = 0.125
+      case 1:
+         smin = 0.125
+         smax = 0.250
+      case 2:
+         smin = 0.250
+         smax = 0.375
+      case 3:
+         smin = 0.375
+         smax = 0.500
+      case 4:
+         smin = 0.500
+         smax = 0.625
+      case 5:
+         smin = 0.625
+         smax = 0.750
+      case 6:
+         smin = 0.750
+         smax = 0.875
+      case 7:
+         smin = 0.875
+         smax = 1.000
+   #compute the scaled value of the linear and power model estimation
+   l = (lw * (smax-smin)) + smin
+   p = (pw * (smax-smin)) + smin
+   #combine into a single varible for easier use
+   xp = [l, p, gw]
    return xp
 
 #set only one participant data type for testing methodology
@@ -201,9 +249,7 @@ Data = genfromtxt(DIR+filetypes[1],delimiter=',',dtype=float)
 angles = [0, 15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345, 360]
 
 #normalize the angles according to 0-360 scale
-normal_angles = [value_mapping(item) for item in angles]
-#get within tactor xp to plot models against
-normal_angle = [Tactorp_within(item) for item in angles]
+normal_angles = [value_normalizing(item) for item in angles]
 
 #normalizing angles from static and dynamic trials split into desired and response process using while loops
 normal_angles_stat = []
@@ -226,8 +272,11 @@ normal_data_dyn = [normal_angles_dyn, normal_response_dyn]
 
 #the code here is to try and make models scale nicely from 0-1 for all data (math does not work out)
 #creating angle set to make nice model lines
-angles_model = np.linspace(0,1,len(angles))
+angles_model = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5, 360]
 
+#print(angles)
+#print("\n")
+#print(normal_angles)
 #find xp for linear and power using motor intensity
 motor_xpl = []
 motor_xpp = []
@@ -240,10 +289,10 @@ while k<=len(angles)-1:
    motor_xpl.append(xll)
    motor_xpp.append(xpp)
    k = k + 1
-
-print(motor_xpl)
-print("\n")
-print(motor_xpp)
+#print("\n")
+#print(motor_xpl)
+#print("\n")
+#print(motor_xpp)
 #multiple tactor math test for models
 """
 N = 8. #number of tactors in the system
@@ -284,15 +333,17 @@ while j<= len(modelr_data) - 1:
 #z_dyn = np.polyfit(normal_data_dyn[:][0],normal_data_dyn[:][1], 1)
 #p_dyn = np.poly1d(z_dyn)
 
+
 #plotting data and perception models
 fig1 = plt.figure("Figure 1")
-plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1])
-plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red")
-plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k")
+plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
+plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
+plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
 
 fig2 = plt.figure("Figure 2")
-plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1])
-plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red")
-plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k")
+plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
+plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
+plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
+
