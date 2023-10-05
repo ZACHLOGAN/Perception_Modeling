@@ -47,37 +47,6 @@ xpp = I1p**2/(I0p**2+I1p**2)
 print(test, a, b, xp, I0l, I1l, xpl, I0p, I1p, xpp)
 """
 
-#file directory for data files
-DIR = "/Users/Zach/Documents/Modeling_for_Perception/"
-#all files for perfroming analysis
-"""
-filetypes = {
-    1:"participant01_computed.csv",
-    2:"participant03_computed.csv",
-    3:"participant04_computed.csv",
-    4:"participant05_computed.csv",
-    5:"participant06_computed.csv",
-    6:"participant07_computed.csv",
-    7:"participant09_computed.csv",
-    8:"participant08_computed.csv",
-    9:"participant010_computed.csv",
-    10:"participant011_computed.csv",
-    11:"participant012_computed.csv",
-    12:"participant013_computed.csv",
-    13:"participant014_computed.csv",
-    14:"participant015_computed.csv",
-    15:"participant016_computed.csv",
-    16:"participant017_computed.csv",
-    17:"participant018_computed.csv",
-    18:"participant019_computed.csv",
-    19:"participant020_computed.csv",
-    20:"participant021_computed.csv",
-    21:"participant022_computed.csv",
-    22:"participant023_computed.csv"}
-"""
-filetypes = {
-    1:"participant018_computed.csv"}
-
 #function for doing the angle calculation
 #tactor_spot is used for computing the ratio for the location of the xp value according to the tactor pair in use
 def Arduino_Mag(angle):
@@ -210,9 +179,44 @@ def intensity_estimate(x):
    xp = [l, p]
    return xp
 
+#file directory for data files
+DIR = "/Users/Zach/Documents/Modeling_for_Perception/"
+#all filetypes
+"""
+filetypes = {
+    1:"participant01_computed.csv",
+    2:"participant03_computed.csv",
+    3:"participant04_computed.csv",
+    4:"participant05_computed.csv",
+    5:"participant06_computed.csv",
+    6:"participant07_computed.csv",
+    7:"participant09_computed.csv",
+    8:"participant08_computed.csv",
+    9:"participant010_computed.csv",
+    10:"participant011_computed.csv",
+    11:"participant012_computed.csv",
+    12:"participant013_computed.csv",
+    13:"participant014_computed.csv",
+    14:"participant015_computed.csv",
+    15:"participant016_computed.csv",
+    16:"participant017_computed.csv",
+    17:"participant018_computed.csv",
+    18:"participant019_computed.csv",
+    19:"participant020_computed.csv",
+    20:"participant021_computed.csv",
+    21:"participant022_computed.csv",
+    22:"participant023_computed.csv"}
+"""
+filetypes = {
+    1:"alldata.csv"}
+
+#filetypes = {
+#   1:"participant018_computed.csv"}
+
 #set only one participant data type for testing methodology
 Data = genfromtxt(DIR+filetypes[1],delimiter=',',dtype=float)
-
+Data = np.delete(Data,0,0)
+Data = np.delete(Data,0,1)
 #angles used in experiment including 0 and 360 for completing model lines
 angles = [15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345]
 
@@ -312,7 +316,10 @@ while decode <= len(normal_response_stat)-1:
          epsilonsp.append(np.absolute(errorsp))
    else:
       epsilonsp.append(np.absolute(errsp))
-      
+   decode = decode+1
+
+decode = 0
+while decode <= len(normal_response_dyn)-1:
    #computing dynamic error
    valdd = Arduino_Mag(angles_dyn[decode])
    estdd = intensity_estimate(valdd)
@@ -382,7 +389,7 @@ plt.show()
 """
 #plot of static data using trendline with modeled angles
 fig2 = plt.figure("Figure 2")
-plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
+plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=15)
 plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
@@ -396,7 +403,7 @@ plt.show()
 """
 #plot of dynamic data using trendline with modeled angles
 fig4 = plt.figure("Figure 4")
-plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
+plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=15)
 plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
 plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
 plt.show()
