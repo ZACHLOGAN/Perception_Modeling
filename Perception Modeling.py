@@ -271,19 +271,20 @@ while j<= len(modelr_data) - 1:
    po_modelr_data.append(modelr_data[j][1])
    j = j + 1
 """
+#creating trendlines using polyfit and poly1D (not useful for data)
 #z_stat = np.polyfit(normal_data_stat[:][0],normal_data_stat[:][1], 1)
 #p_stat = np.poly1d(z_stat)
-fig1 = plt.figure("Figure 1")
+#z_dyn = np.polyfit(normal_data_dyn[:][0],normal_data_dyn[:][1], 1)
+#p_dyn = np.poly1d(z_dyn)
 
+#plotting data and perception models
+fig1 = plt.figure("Figure 1")
 plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1])
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red")
 plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k")
-
 plt.show()
 
 fig2 = plt.figure("Figure 2")
-#z_dyn = np.polyfit(normal_data_dyn[:][0],normal_data_dyn[:][1], 1)
-#p_dyn = np.poly1d(z_dyn)
 plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1])
 plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red")
 plt.plot(angles_model, motor_xpp, label = "Power Model", color = "k")
