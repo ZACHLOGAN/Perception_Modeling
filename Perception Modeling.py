@@ -194,7 +194,7 @@ def intensity_estimate(x):
 #set only one participant data type for testing methodology
 Data = genfromtxt(DIR+filetypes[1],delimiter=',',dtype=float)
 
-
+#angles used in experiment including 0 and 360 for completing model lines
 angles = [0, 15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345, 360]
 
 #normalize the angles according to 0-360 scale
