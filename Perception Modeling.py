@@ -4,6 +4,8 @@ from numpy import genfromtxt
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+import scipy.optimize as optimize
+from sklearn.metrics import mean_squared_error
 #import needed libraries above
 
 """
@@ -50,7 +52,7 @@ print(test, a, b, xp, I0l, I1l, xpl, I0p, I1p, xpp)
 
 #function for doing the angle calculation
 #tactor_spot is used for computing the ratio for the location of the xp value according to the tactor pair in use
-def Arduino_Mag(angle):
+def Arduino_Magl(angle):
    sev = 0
    Motor1 = 0
    Motor2 = 0
@@ -180,34 +182,183 @@ def intensity_estimate(x):
    xp = [l, p]
    return xp
 
+
+def intensity_estimate_adjusted(x,S0,S1):
+   #within interval linear model estimation
+   lw = (x[1]*S1[0])/(x[0]*S0[0]+x[1]*S1[0])
+   #within interval power model estimation
+   pw = (S1[1]*x[1]**2)/((S0[1]*x[0]**2)+(S1[1]*x[1]**2))
+   #place variables for denoting the scaling level based on tactor pair loaction
+   smax = 1
+   smin = 0
+   #scaling the data according to tactor pair location
+   match x[2]:
+      case 0:
+         smin = 0
+         smax = 0.125
+      case 1:
+         smin = 0.125
+         smax = 0.250
+      case 2:
+         smin = 0.250
+         smax = 0.375
+      case 3:
+         smin = 0.375
+         smax = 0.500
+      case 4:
+         smin = 0.500
+         smax = 0.625
+      case 5:
+         smin = 0.625
+         smax = 0.750
+      case 6:
+         smin = 0.750
+         smax = 0.875
+      case 7:
+         smin = 0.875
+         smax = 1.000
+   #compute the scaled value of the linear and power model estimation
+   l = (lw * (smax-smin)) + smin
+   p = (pw * (smax-smin)) + smin
+   #combine into a single varible for easier use
+   xp = [l, p]
+   return xp
+
+
+def linear_estimate(S0, S1, data):
+   #within interval linear model estimation
+   lw = (S1*data[1])/(S0*data[0]+S1*data[1])
+   #place variables for denoting the scaling level based on tactor pair loaction
+   smax = 1
+   smin = 0
+   #scaling the data according to tactor pair location
+   match data[2]:
+      case 0:
+         smin = 0
+         smax = 0.125
+      case 1:
+         smin = 0.125
+         smax = 0.250
+      case 2:
+         smin = 0.250
+         smax = 0.375
+      case 3:
+         smin = 0.375
+         smax = 0.500
+      case 4:
+         smin = 0.500
+         smax = 0.625
+      case 5:
+         smin = 0.625
+         smax = 0.750
+      case 6:
+         smin = 0.750
+         smax = 0.875
+      case 7:
+         smin = 0.875
+         smax = 1.000
+   #compute the scaled value of the linear and power model estimation
+   l = (lw * (smax-smin)) + smin
+   return l
+
+def power_estimate(S0, S1, data):
+   #within interval linear model estimation
+   pw = (S1*(data[1]**2))/(S0*(data[0]**2)+S1*(data[1]**2))
+   #place variables for denoting the scaling level based on tactor pair loaction
+   smax = 1
+   smin = 0
+   #scaling the data according to tactor pair location
+   match data[2]:
+      case 0:
+         smin = 0
+         smax = 0.125
+      case 1:
+         smin = 0.125
+         smax = 0.250
+      case 2:
+         smin = 0.250
+         smax = 0.375
+      case 3:
+         smin = 0.375
+         smax = 0.500
+      case 4:
+         smin = 0.500
+         smax = 0.625
+      case 5:
+         smin = 0.625
+         smax = 0.750
+      case 6:
+         smin = 0.750
+         smax = 0.875
+      case 7:
+         smin = 0.875
+         smax = 1.000
+   #compute the scaled value of the linear and power model estimation
+   p = (pw * (smax-smin)) + smin
+   return p
+
+#optimization linear function
+def linear_optimum(x, angle, response):
+   #get parameters
+   S0 = x[0]
+   S1 = x[1]
+   predicted_response = []
+   error = []
+   error_sq = 0
+   j = 0
+   for i in angle:
+      Motor = Arduino_Magl(i)
+      predicted_response.append(power_estimate(S0, S1, Motor))
+   
+   while j <= len(angle)-1:
+      err = response[j] - predicted_response[j]
+      if (err > 0.5 or err < -0.5):
+         if (angle[j] < 180):
+            err = 1 + response[j] - predicted_response[j]
+            error.append(err**2)
+         elif(angle[j] > 180):
+            err = 1 - response[j] - predicted_response[j]
+            error.append(err**2)
+      else:
+         error.append(err**2)
+      j = j+1
+         
+   error_sq = sum(error)
+   
+   return error_sq
+
+def power_optimum(x, angle, response):
+   #get parameters
+   S0 = x[0]
+   S1 = x[1]
+   error_sq = 0
+   j = 0
+   error = []
+   predicted_response = []
+   for i in angle:
+      Motor = Arduino_Magl(i)
+      predicted_response.append(power_estimate(S0, S1, Motor))
+
+   while j <= len(angle)-1:
+      err = response[j] - predicted_response[j]
+      if (err > 0.5 or err < -0.5):
+         if (angle[j] < 180):
+            err = 1 + response[j] - predicted_response[j]
+            error.append(err**2)
+         elif(angle[j] > 180):
+            err = 1 - response[j] - predicted_response[j]
+            error.append(err**2)
+      else:
+         error.append(err**2)
+      j = j+1
+         
+   error_sq = sum(error)
+   
+   return error_sq
 #file directory for data files
 DIR = "/Users/Zach/Documents/Modeling_for_Perception/"
 #all filetypes
-"""
-filetypes = {
-    1:"participant01_computed.csv",
-    2:"participant03_computed.csv",
-    3:"participant04_computed.csv",
-    4:"participant05_computed.csv",
-    5:"participant06_computed.csv",
-    6:"participant07_computed.csv",
-    7:"participant09_computed.csv",
-    8:"participant08_computed.csv",
-    9:"participant010_computed.csv",
-    10:"participant011_computed.csv",
-    11:"participant012_computed.csv",
-    12:"participant013_computed.csv",
-    13:"participant014_computed.csv",
-    14:"participant015_computed.csv",
-    15:"participant016_computed.csv",
-    16:"participant017_computed.csv",
-    17:"participant018_computed.csv",
-    18:"participant019_computed.csv",
-    19:"participant020_computed.csv",
-    20:"participant021_computed.csv",
-    21:"participant022_computed.csv",
-    22:"participant023_computed.csv"}
-"""
+
 filetypes = {
     1:"alldata.csv"}
 
@@ -219,15 +370,15 @@ Data = genfromtxt(DIR+filetypes[1],delimiter=',',dtype=float)
 Data = np.delete(Data,0,0)
 Data = np.delete(Data,0,1)
 #angles used in experiment including 0 and 360 for completing model lines
-angles = [15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345]
+#angles = [15, 22.5, 50, 75, 105, 112.5, 140, 165, 195, 202.5, 220, 255, 285, 295.5, 310, 345]
 
 #normalize the angles according to 0-360 scale
-normal_angles = [value_normalizing(item) for item in angles]
+#normal_angles = [value_normalizing(item) for item in angles]
 
 #creating angle set to make nice model lines
-angles_model = np.linspace(0,360,360)
+#angles_model = np.linspace(0,360,360)
 #normalizing the model angle set
-angles_modeln = [value_normalizing(item) for item in angles_model]
+#angles_modeln = [value_normalizing(item) for item in angles_model]
 
 #normalizing angles from static and dynamic trials split into desired and response process using while loops
 normal_angles_stat = []
@@ -251,16 +402,44 @@ while i <= len(Data)-1:
       angles_dyn.append(Data[i][1])
       angles_dynr.append(Data[i][5])
    i = i + 1
+stat = [angles_stat, angles_statr]
+#perform minimizing
+guess = [5, 5]
+#L-BFGS-B
+#BFGS
+#Nelder-Mead
+#TNC
+#SLSQP
+
+bds = ((1, 50), (1, 50))
+resultsl = optimize.minimize(linear_optimum, guess, method='Nelder-Mead', args = (angles_stat, normal_response_stat), bounds = bds)
+
+resultsp = optimize.minimize(power_optimum, guess, method='Nelder-Mead', args = (angles_stat, normal_response_stat), bounds = bds)
+
+resultdl = optimize.minimize(linear_optimum, guess, method='Nelder-Mead', args = (angles_dyn, normal_response_dyn), bounds = bds)
+
+resultdp = optimize.minimize(power_optimum, guess, method='Nelder-Mead', args = (angles_dyn, normal_response_dyn), bounds = bds)
+
+Ssl = resultsl.x
+Ssp = resultsp.x
+Sdl = resultdl.x
+Sdp = resultdp.x
+
+Ss0 = [Ssl[0], Ssp[0]]
+Sd0 = [Sdl[0], Sdp[0]]
+Ss1 = [Ssl[1], Ssp[1]]
+Sd1 = [Sdl[1], Sdp[1]]
+
 
 #converting normalized angle data into combined lists for easy ploting
-normal_data_stat =[normal_angles_stat, normal_response_stat, angles_stat, angles_statr]
-normal_data_dyn = [normal_angles_dyn, normal_response_dyn, angles_dyn, angles_dynr]
+#normal_data_stat =[normal_angles_stat, normal_response_stat, angles_stat, angles_statr]
+#normal_data_dyn = [normal_angles_dyn, normal_response_dyn, angles_dyn, angles_dynr]
 
 #find xp for linear and power using motor intensity
 #motor_xpl = []
 #motor_xpp = []
-motor_xplm = []
-motor_xppm = []
+#motor_xplm = []
+#motor_xppm = []
 """
 k = 0
 while k<=len(angles)-1:
@@ -272,6 +451,7 @@ while k<=len(angles)-1:
    motor_xpp.append(xpp)
    k = k + 1
 """
+"""
 nq = 0
 while nq<=len(angles_model)-1:
    val = Arduino_Mag(angles_model[nq])
@@ -281,6 +461,8 @@ while nq<=len(angles_model)-1:
    motor_xplm.append(xll)
    motor_xppm.append(xpp)
    nq = nq + 1
+"""
+
 
 #compute decoding error for against the models using while loop
 decode = 0
@@ -290,8 +472,8 @@ epsilondl = []
 epsilondp = []
 while decode <= len(normal_response_stat)-1:
    #computing static error
-   valsd = Arduino_Mag(angles_stat[decode])
-   estsd = intensity_estimate(valsd)
+   valsd = Arduino_Magl(angles_stat[decode])
+   estsd = intensity_estimate_adjusted(valsd, Ss0, Ss1)
    xllsd = estsd[0]
    xppsd = estsd[1]
    errsl = normal_response_stat[decode] - xllsd
@@ -322,8 +504,8 @@ while decode <= len(normal_response_stat)-1:
 decode2 = 0
 while decode2 <= len(normal_response_dyn)-1:
    #computing dynamic error
-   valdd = Arduino_Mag(angles_dyn[decode2])
-   estdd = intensity_estimate(valdd)
+   valdd = Arduino_Magl(angles_dyn[decode2])
+   estdd = intensity_estimate_adjusted(valdd, Sd0, Sd1)
    xlldd = estdd[0]
    xppdd = estdd[1]
    errdl = normal_response_dyn[decode2] - xlldd
@@ -356,35 +538,28 @@ meansp = np.mean(epsilonsp)
 meandl = np.mean(epsilondl)
 meandp = np.mean(epsilondp)
 
-medsl = np.median(epsilonsl)
-medsp = np.median(epsilonsp)
-meddl = np.median(epsilondl)
-meddp = np.median(epsilondp)
-
 stdsl = np.std(epsilonsl)
 stdsp = np.std(epsilonsp)
 stddl = np.std(epsilondl)
 stddp = np.std(epsilondp)
-
-varsl = np.var(epsilonsl)
-varsp = np.var(epsilonsp)
-vardl = np.var(epsilondl)
-vardp = np.var(epsilondp)
-
-stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
-dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
-sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=True)
-spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=True)
 print("L Mean","L STD", "P Mean","P STD")
 print("\n")
 print(meansl, stdsl ,meansp, stdsp)
 print("\n")
 print(meandl, stddl ,meandp, stddp)
 print("\n")
-print("Medians")
-print(medsl, medsp, meddl, meddp)
+print("Variances")
+varsl = np.var(epsilonsl)
+varsp = np.var(epsilonsp)
+vardl = np.var(epsilondl)
+vardp = np.var(epsilondp)
+print(varsl, varsp ,vardl, vardp)
 print("\n")
-#print("\n")
+stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=False)
+dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=False)
+sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=False)
+spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=False)
+print("Statistic Results")
 print(stlp)
 print("\n")
 print(dtlp)
@@ -392,41 +567,83 @@ print("\n")
 print(sldl)
 print("\n")
 print(spdp)
-#print statements for testing
-#print(angles)
-#print("\n")
-#print(normal_angles)
-#print("\n")
-#print(motor_xpl)
-#print("\n")
-#print(motor_xpp)
 
-#plotting data and perception models
-#plot of static data using trend lines of only experiment angles
-"""
-fig1 = plt.figure("Figure 1")
-plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
-plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
-plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
-plt.show()
-"""
-#plot of static data using trendline with modeled angles
-fig2 = plt.figure("Figure 2")
-plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=15)
-plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
-plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
-plt.show()
-"""
-#plot of dynamic data using trend lines of only experiment angles
-fig3 = plt.figure("Figure 3")
-plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
-plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
-plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
-plt.show()
-"""
-#plot of dynamic data using trendline with modeled angles
-fig4 = plt.figure("Figure 4")
-plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=15)
-plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
-plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
-plt.show()
+##
+##meansl = np.mean(epsilonsl)
+##meansp = np.mean(epsilonsp)
+##meandl = np.mean(epsilondl)
+##meandp = np.mean(epsilondp)
+##
+##medsl = np.median(epsilonsl)
+##medsp = np.median(epsilonsp)
+##meddl = np.median(epsilondl)
+##meddp = np.median(epsilondp)
+##
+##stdsl = np.std(epsilonsl)
+##stdsp = np.std(epsilonsp)
+##stddl = np.std(epsilondl)
+##stddp = np.std(epsilondp)
+##
+##varsl = np.var(epsilonsl)
+##varsp = np.var(epsilonsp)
+##vardl = np.var(epsilondl)
+##vardp = np.var(epsilondp)
+##
+##stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
+##dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
+##sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=True)
+##spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=True)
+##print("L Mean","L STD", "P Mean","P STD")
+##print("\n")
+##print(meansl, stdsl ,meansp, stdsp)
+##print("\n")
+##print(meandl, stddl ,meandp, stddp)
+##print("\n")
+##print("Medians")
+##print(medsl, medsp, meddl, meddp)
+##print("\n")
+###print("\n")
+##print(stlp)
+##print("\n")
+##print(dtlp)
+##print("\n")
+##print(sldl)
+##print("\n")
+##print(spdp)
+###print statements for testing
+###print(angles)
+###print("\n")
+###print(normal_angles)
+###print("\n")
+###print(motor_xpl)
+###print("\n")
+###print(motor_xpp)
+##
+###plotting data and perception models
+###plot of static data using trend lines of only experiment angles
+##
+##fig1 = plt.figure("Figure 1")
+##plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=10)
+##plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
+##plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
+##
+###plot of static data using trendline with modeled angles
+##fig2 = plt.figure("Figure 2")
+##plt.scatter(normal_data_stat[:][0],normal_data_stat[:][1], s=15)
+##plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
+##plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
+##plt.show()
+##
+###plot of dynamic data using trend lines of only experiment angles
+##fig3 = plt.figure("Figure 3")
+##plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=10)
+##plt.plot(normal_angles, motor_xpl, label = "Linear Model", color = "tab:red", linewidth = 2)
+##plt.plot(normal_angles, motor_xpp, label = "Power Model", color = "k", linewidth = 2)
+##plt.show()
+##
+###plot of dynamic data using trendline with modeled angles
+##fig4 = plt.figure("Figure 4")
+##plt.scatter(normal_data_dyn[:][0],normal_data_dyn[:][1], s=15)
+##plt.plot(angles_modeln, motor_xplm, label = "Linear Model", color = "tab:red", linewidth = 2)
+##plt.plot(angles_modeln, motor_xppm, label = "Power Model", color = "k", linewidth = 2)
+##plt.show()
