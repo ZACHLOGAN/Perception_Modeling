@@ -194,11 +194,7 @@ def intensity_estimate(x):
    return xp
 
 
-def intensity_estimate_adjusted(x,S0,S1):
-   #within interval linear model estimation
-   lw = (x[1]*S1[0])/(x[0]*S0[0]+x[1]*S1[0])
-   #within interval power model estimation
-   pw = ((S1[1]**2)*x[1]**2)/(((S0[1]**2)*x[0]**2)+((S1[1]**2)*x[1]**2))
+def intensity_estimate_adjusted(x, SL, SP):
    #place variables for denoting the scaling level based on tactor pair loaction
    smax = 1
    smin = 0
@@ -207,27 +203,46 @@ def intensity_estimate_adjusted(x,S0,S1):
       case 0:
          smin = 0
          smax = 0.125
+         #within interval linear model estimation
+         lw = (x[1]*SL[1])/(x[0]*SL[0]+x[1]*SL[1])
+         #within interval power model estimation
+         pw = ((SP[1]**2)*x[1]**2)/(((SP[0]**2)*x[0]**2)+((SP[1]**2)*x[1]**2))
       case 1:
          smin = 0.125
          smax = 0.250
+         lw = (x[1]*SL[2])/(x[0]*SL[1]+x[1]*SL[2])
+         pw = ((SP[2]**2)*x[1]**2)/(((SP[1]**2)*x[0]**2)+((SP[2]**2)*x[1]**2))
       case 2:
          smin = 0.250
          smax = 0.375
+         lw = (x[1]*SL[3])/(x[0]*SL[2]+x[1]*SL[3])
+         pw = ((SP[3]**2)*x[1]**2)/(((SP[2]**2)*x[0]**2)+((SP[3]**2)*x[1]**2))
       case 3:
          smin = 0.375
          smax = 0.500
+         lw = (x[1]*SL[4])/(x[0]*SL[3]+x[1]*SL[4])
+         pw = ((SP[4]**2)*x[1]**2)/(((SP[3]**2)*x[0]**2)+((SP[4]**2)*x[1]**2))
       case 4:
          smin = 0.500
          smax = 0.625
+         lw = (x[1]*SL[5])/(x[0]*SL[4]+x[1]*SL[5])
+         pw = ((SP[5]**2)*x[1]**2)/(((SP[4]**2)*x[0]**2)+((SP[5]**2)*x[1]**2))
       case 5:
          smin = 0.625
          smax = 0.750
+         lw = (x[1]*SL[6])/(x[0]*SL[5]+x[1]*SL[6])
+         pw = ((SP[6]**2)*x[1]**2)/(((SP[5]**2)*x[0]**2)+((SP[6]**2)*x[1]**2))
       case 6:
          smin = 0.750
          smax = 0.875
+         lw = (x[1]*SL[7])/(x[0]*SL[6]+x[1]*SL[7])
+         pw = ((SP[7]**2)*x[1]**2)/(((SP[6]**2)*x[0]**2)+((SP[7]**2)*x[1]**2))
       case 7:
          smin = 0.875
          smax = 1.000
+         lw = (x[1]*SL[0])/(x[0]*SL[7]+x[1]*SL[0])
+         pw = ((SP[0]**2)*x[1]**2)/(((SP[7]**2)*x[0]**2)+((SP[0]**2)*x[1]**2))
+         
    #compute the scaled value of the linear and power model estimation
    l = (lw * (smax-smin)) + smin
    p = (pw * (smax-smin)) + smin
@@ -236,9 +251,8 @@ def intensity_estimate_adjusted(x,S0,S1):
    return xp
 
 
-def linear_estimate(S0, S1, data):
+def linear_estimate(S0, S1, S2, S3, S4, S5, S6, S7, data):
    #within interval linear model estimation
-   lw = (S1*data[1])/(S0*data[0]+S1*data[1])
    #place variables for denoting the scaling level based on tactor pair loaction
    smax = 1
    smin = 0
@@ -247,34 +261,41 @@ def linear_estimate(S0, S1, data):
       case 0:
          smin = 0
          smax = 0.125
+         lw = (S1*data[1])/(S0*data[0]+S1*data[1])
       case 1:
          smin = 0.125
          smax = 0.250
+         lw = (S3*data[1])/(S1*data[0]+S2*data[1])
       case 2:
          smin = 0.250
          smax = 0.375
+         lw = (S3*data[1])/(S2*data[0]+S3*data[1])
       case 3:
          smin = 0.375
          smax = 0.500
+         lw = (S4*data[1])/(S3*data[0]+S4*data[1])
       case 4:
          smin = 0.500
          smax = 0.625
+         lw = (S5*data[1])/(S4*data[0]+S5*data[1])
       case 5:
          smin = 0.625
          smax = 0.750
+         lw = (S6*data[1])/(S5*data[0]+S6*data[1])
       case 6:
          smin = 0.750
          smax = 0.875
+         lw = (S7*data[1])/(S6*data[0]+S7*data[1])
       case 7:
          smin = 0.875
          smax = 1.000
+         lw = (S0*data[1])/(S7*data[0]+S0*data[1])
    #compute the scaled value of the linear and power model estimation
    l = (lw * (smax-smin)) + smin
    return l
 
-def power_estimate(S0, S1, data):
+def power_estimate(S0, S1, S2, S3, S4, S5, S6, S7, data):
    #within interval linear model estimation
-   pw = ((S1**2)*(data[1]**2))/((S0**2)*(data[0]**2)+(S1**2)*(data[1]**2))
    #place variables for denoting the scaling level based on tactor pair loaction
    smax = 1
    smin = 0
@@ -283,27 +304,35 @@ def power_estimate(S0, S1, data):
       case 0:
          smin = 0
          smax = 0.125
+         pw = ((S1**2)*(data[1]**2))/((S0**2)*(data[0]**2)+(S1**2)*(data[1]**2))
       case 1:
          smin = 0.125
          smax = 0.250
+         pw = ((S2**2)*(data[1]**2))/((S1**2)*(data[0]**2)+(S2**2)*(data[1]**2))
       case 2:
          smin = 0.250
          smax = 0.375
+         pw = ((S3**2)*(data[1]**2))/((S2**2)*(data[0]**2)+(S3**2)*(data[1]**2))
       case 3:
          smin = 0.375
          smax = 0.500
+         pw = ((S4**2)*(data[1]**2))/((S3**2)*(data[0]**2)+(S4**2)*(data[1]**2))
       case 4:
          smin = 0.500
          smax = 0.625
+         pw = ((S5**2)*(data[1]**2))/((S4**2)*(data[0]**2)+(S5**2)*(data[1]**2))
       case 5:
          smin = 0.625
          smax = 0.750
+         pw = ((S6**2)*(data[1]**2))/((S5**2)*(data[0]**2)+(S6**2)*(data[1]**2))
       case 6:
          smin = 0.750
          smax = 0.875
+         pw = ((S7**2)*(data[1]**2))/((S6**2)*(data[0]**2)+(S7**2)*(data[1]**2))
       case 7:
          smin = 0.875
          smax = 1.000
+         pw = ((S0**2)*(data[1]**2))/((S7**2)*(data[0]**2)+(S0**2)*(data[1]**2))
    #compute the scaled value of the linear and power model estimation
    p = (pw * (smax-smin)) + smin
    return p
@@ -313,13 +342,19 @@ def linear_optimum(x, angle, response):
    #get parameters
    S0 = x[0]
    S1 = x[1]
+   S2 = x[2]
+   S3 = x[3]
+   S4 = x[4]
+   S5 = x[5]
+   S6 = x[6]
+   S7 = x[7]
    predicted_response = []
    error = []
    error_sq = 0
    j = 0
    for i in angle:
       Motor = Arduino_Magl(i)
-      predicted_response.append(linear_estimate(S0, S1, Motor))
+      predicted_response.append(linear_estimate(S0, S1, S2, S3, S4, S5, S6, S7, Motor))
    
    while j <= len(angle)-1:
       err = response[j] - predicted_response[j]
@@ -342,13 +377,19 @@ def power_optimum(x, angle, response):
    #get parameters
    S0 = x[0]
    S1 = x[1]
+   S2 = x[2]
+   S3 = x[3]
+   S4 = x[4]
+   S5 = x[5]
+   S6 = x[6]
+   S7 = x[7]
    error_sq = 0
    j = 0
    error = []
    predicted_response = []
    for i in angle:
       Motor = Arduino_Magl(i)
-      predicted_response.append(power_estimate(S0, S1, Motor))
+      predicted_response.append(power_estimate(S0, S1, S2, S3, S4, S5, S6, S7, Motor))
 
    while j <= len(angle)-1:
       err = response[j] - predicted_response[j]
@@ -393,6 +434,7 @@ Data = np.delete(Data,0,1)
 
 #normalizing angles from static and dynamic trials split into desired and response process using while loops
 angles = []
+response = []
 normal_angles = []
 normal_response = []
 normal_angles_stat = []
@@ -406,6 +448,7 @@ angles_dynr = []
 i = 0
 while i <= len(Data)-1:
    angles.append(Data[i][1])
+   response.append(Data[i][5])
    normal_angles.append(value_normalizing(Data[i][1]))
    normal_response.append(value_normalizing(Data[i][5]))
    if (Data[i][0] == 0):
@@ -419,16 +462,65 @@ while i <= len(Data)-1:
       angles_dyn.append(Data[i][1])
       angles_dynr.append(Data[i][5])
    i = i + 1
+
+
+#get normal static and dynamic epsilon absolute decoding error.
+conversions = 0
+conversiond = 0
+converter = 0
+normal_static_epsilon = []
+normal_dynamic_epsilon = []
+normal_epsilon = []
+
+
+while conversions <= len(normal_response_stat)-1:
+   normal_static_error = normal_response_stat[conversions] - normal_angles_stat[conversions]
+   if (normal_static_error > 0.5 or normal_static_error < -0.5):
+      if (angles_stat[conversions] <= 180):
+         abs_normal_static_error = np.absolute(normal_response_stat[conversions] - normal_angles_stat[conversions])
+         normal_static_epsilon.append(abs_normal_static_error)
+      elif (angles_stat[conversions] > 180):
+         abs_normal_static_error = np.absolute(normal_response_stat[conversions] - normal_angles_stat[conversions])
+         normal_static_epsilon.append(abs_normal_static_error)
+   else:
+      normal_static_epsilon.append(np.absolute(normal_static_error))
+   conversions = conversions + 1
+
+while conversiond <= len(normal_response_dyn)-1:
+   normal_dyn_error = normal_response_dyn[conversiond] - normal_angles_dyn[conversiond]
+   if (normal_dyn_error > 0.47 or normal_dyn_error < -0.47):
+      if (angles_dyn[conversiond] <=180):
+         abs_normal_dyn_error = np.absolute(normal_response_dyn[conversiond] - normal_angles_dyn[conversiond])
+         normal_dynamic_epsilon.append(abs_normal_dyn_error)
+      elif (angles_dyn[conversiond] > 180):
+         abs_normal_dyn_error = np.absolute(normal_response_dyn[conversiond] - normal_angles_dyn[conversiond])
+         normal_dynamic_epsilon.append(abs_normal_dyn_error)
+   else:
+      normal_dynamic_epsilon.append(np.absolute(normal_dyn_error))
+   conversiond = conversiond + 1
+
+while converter <= len(normal_response)-1:
+   normal_error = normal_response[converter] - normal_angles[converter]
+   normal_epsilon.append(np.absolute(normal_error))
+   converter = converter + 1
+
+#get normalized means and standard deviations of normal data
+normal_static_mean = np.mean(normal_static_epsilon)
+normal_dynamic_mean = np.mean(normal_dynamic_epsilon)
+normal_static_std = np.std(normal_static_epsilon)
+normal_dynamic_std = np.std(normal_dynamic_epsilon)
+
+
 stat = [angles_stat, angles_statr]
 #perform minimizing
-guess = [5, 5]
+guess = [5, 52, 14, 43, 10, 25, 35, 60]
 #L-BFGS-B
 #BFGS
 #Nelder-Mead
 #TNC
 #SLSQP
 
-bds = ((1, 50), (1, 50))
+bds = ((0.5, 100), (0.5, 100), (0.5, 100), (0.5, 100), (0.5, 100), (0.5, 100), (0.5, 100), (0.5, 100))
 resultsl = optimize.minimize(linear_optimum, guess, method='L-BFGS-B', args = (angles_stat, normal_response_stat), bounds = bds)
 
 resultsp = optimize.minimize(power_optimum, guess, method='L-BFGS-B', args = (angles_stat, normal_response_stat), bounds = bds)
@@ -437,57 +529,16 @@ resultdl = optimize.minimize(linear_optimum, guess, method='L-BFGS-B', args = (a
 
 resultdp = optimize.minimize(power_optimum, guess, method='L-BFGS-B', args = (angles_dyn, normal_response_dyn), bounds = bds)
 
-resultl = optimize.minimize(linear_optimum, guess, method='Nelder-Mead', args = (normal_angles, normal_response), bounds = bds)
+resultl = optimize.minimize(linear_optimum, guess, method='L-BFGS-B', args = (normal_angles, normal_response), bounds = bds)
 
-resultp = optimize.minimize(power_optimum, guess, method='Nelder-Mead', args = (normal_angles, normal_response), bounds = bds)
+resultp = optimize.minimize(power_optimum, guess, method='L-BFGS-B', args = (normal_angles, normal_response), bounds = bds)
 SL = resultl.x
 SP = resultp.x
-S0 = [SL[0], SP[0]]
-S1 = [SL[1], SP[1]]
 
 Ssl = resultsl.x
 Ssp = resultsp.x
 Sdl = resultdl.x
 Sdp = resultdp.x
-
-Ss0 = [Ssl[0], Ssp[0]]
-Sd0 = [Sdl[0], Sdp[0]]
-Ss1 = [Ssl[1], Ssp[1]]
-Sd1 = [Sdl[1], Sdp[1]]
-
-
-#converting normalized angle data into combined lists for easy ploting
-#normal_data_stat =[normal_angles_stat, normal_response_stat, angles_stat, angles_statr]
-#normal_data_dyn = [normal_angles_dyn, normal_response_dyn, angles_dyn, angles_dynr]
-
-#find xp for linear and power using motor intensity
-#motor_xpl = []
-#motor_xpp = []
-#motor_xplm = []
-#motor_xppm = []
-"""
-k = 0
-while k<=len(angles)-1:
-   val = Arduino_Mag(angles[k])
-   est = intensity_estimate(val)
-   xll = est[0]
-   xpp = est[1]
-   motor_xpl.append(xll)
-   motor_xpp.append(xpp)
-   k = k + 1
-"""
-"""
-nq = 0
-while nq<=len(angles_model)-1:
-   val = Arduino_Mag(angles_model[nq])
-   est = intensity_estimate(val)
-   xll = est[0]
-   xpp = est[1]
-   motor_xplm.append(xll)
-   motor_xppm.append(xpp)
-   nq = nq + 1
-"""
-
 
 #compute decoding error for against the models using while loop
 decode = 0
@@ -498,7 +549,7 @@ epsilondp = []
 while decode <= len(normal_response_stat)-1:
    #computing static error
    valsd = Arduino_Magl(angles_stat[decode])
-   estsd = intensity_estimate_adjusted(valsd, Ss0, Ss1)
+   estsd = intensity_estimate_adjusted(valsd, Ssl, Ssp)
    xllsd = estsd[0]
    xppsd = estsd[1]
    errsl = normal_response_stat[decode] - xllsd
@@ -506,21 +557,21 @@ while decode <= len(normal_response_stat)-1:
 
    #wrapping of error on 0-1 scale for static linear
    if (errsl > 0.5 or errsl < -0.5):
-      if (angles_stat[decode] < 180):
-         errorsl = 1 + normal_response_stat[decode] - xllsd
+      if (normal_angles_stat[decode] < 0.5):
+         errorsl = normal_response_stat[decode] - xllsd
          epsilonsl.append(np.absolute(errorsl))
-      elif(angles_stat[decode] > 180):
-         errorsl = 1 - normal_response_stat[decode] - xllsd
+      elif(normal_angles_stat[decode] > 0.5):
+         errorsl = normal_response_stat[decode] - xllsd
          epsilonsl.append(np.absolute(errorsl))
    else:
       epsilonsl.append(np.absolute(errsl))
    #wrapping error on 0-1 scale for static power
    if (errsp > 0.5 or errsp < -0.5):
-      if (angles_stat[decode] < 180):
-         errorsp = 1 + normal_response_stat[decode] - xppsd
+      if (normal_angles_stat[decode] < 0.5):
+         errorsp = normal_response_stat[decode] - xppsd
          epsilonsp.append(np.absolute(errorsp))
-      elif(angles_stat[decode] > 180):
-         errorsp = 1 - normal_response_stat[decode] - xppsd
+      elif(normal_angles_stat[decode] > 0.5):
+         errorsp = normal_response_stat[decode] - xppsd
          epsilonsp.append(np.absolute(errorsp))
    else:
       epsilonsp.append(np.absolute(errsp))
@@ -530,7 +581,7 @@ decode2 = 0
 while decode2 <= len(normal_response_dyn)-1:
    #computing dynamic error
    valdd = Arduino_Magl(angles_dyn[decode2])
-   estdd = intensity_estimate_adjusted(valdd, Sd0, Sd1)
+   estdd = intensity_estimate_adjusted(valdd, Sdl, Sdp)
    xlldd = estdd[0]
    xppdd = estdd[1]
    errdl = normal_response_dyn[decode2] - xlldd
@@ -538,10 +589,10 @@ while decode2 <= len(normal_response_dyn)-1:
    #wrapping of error on 0-1 scale for dynamic linear
    if (errdl > 0.5 or errdl < -0.5):
       if (angles_dyn[decode2] < 180):
-         errordl = 1 + normal_response_dyn[decode2] - xlldd
+         errordl = normal_response_dyn[decode2] - xlldd
          epsilondl.append(np.absolute(errordl))
       elif(angles_dyn[decode2] > 180):
-         errordl = 1 - normal_response_dyn[decode2] - xlldd
+         errordl = normal_response_dyn[decode2] - xlldd
          epsilondl.append(np.absolute(errordl))
    else:
       epsilondl.append(np.absolute(errdl))
@@ -549,10 +600,10 @@ while decode2 <= len(normal_response_dyn)-1:
    #wrapping error on 0-1 scale for dynamic power
    if (errdp > 0.5 or errdp < -0.5):
       if (angles_dyn[decode2] < 180):
-         errordp = 1 + normal_response_dyn[decode2] - xppdd
+         errordp = normal_response_dyn[decode2] - xppdd
          epsilondp.append(np.absolute(errordp))
       elif(angles_dyn[decode2] > 180):
-         errordp = 1 - normal_response_dyn[decode2] - xppdd
+         errordp = normal_response_dyn[decode2] - xppdd
          epsilondp.append(np.absolute(errordp))
    else:
       epsilondp.append(np.absolute(errdp))
@@ -576,20 +627,20 @@ while decode3 <= len(normal_response_stat)-1:
    #wrapping of error on 0-1 scale for static linear
    if (errsl > 0.5 or errsl < -0.5):
       if (angles_stat[decode3] < 180):
-         errorsl = 1 + normal_response_stat[decode3] - xllsd
+         errorsl = normal_response_stat[decode3] - xllsd
          epsilonsnal.append(np.absolute(errorsl))
       elif(angles_stat[decode3] > 180):
-         errorsl = 1 - normal_response_stat[decode3] - xllsd
+         errorsl = normal_response_stat[decode3] - xllsd
          epsilonsnal.append(np.absolute(errorsl))
    else:
       epsilonsnal.append(np.absolute(errsl))
    #wrapping error on 0-1 scale for static power
    if (errsp > 0.5 or errsp < -0.5):
       if (angles_stat[decode3] < 180):
-         errorsp = 1 + normal_response_stat[decode3] - xppsd
+         errorsp = normal_response_stat[decode3] - xppsd
          epsilonsnap.append(np.absolute(errorsp))
       elif(angles_stat[decode3] > 180):
-         errorsp = 1 - normal_response_stat[decode3] - xppsd
+         errorsp = normal_response_stat[decode3] - xppsd
          epsilonsnap.append(np.absolute(errorsp))
    else:
       epsilonsnap.append(np.absolute(errsp))
@@ -607,10 +658,10 @@ while decode4 <= len(normal_response_dyn)-1:
    #wrapping of error on 0-1 scale for dynamic linear
    if (errdl > 0.5 or errdl < -0.5):
       if (angles_dyn[decode4] < 180):
-         errordl = 1 + normal_response_dyn[decode4] - xlldd
+         errordl = normal_response_dyn[decode4] - xlldd
          epsilondnal.append(np.absolute(errordl))
       elif(angles_dyn[decode4] > 180):
-         errordl = 1 - normal_response_dyn[decode4] - xlldd
+         errordl = normal_response_dyn[decode4] - xlldd
          epsilondnal.append(np.absolute(errordl))
    else:
       epsilondnal.append(np.absolute(errdl))
@@ -618,47 +669,49 @@ while decode4 <= len(normal_response_dyn)-1:
    #wrapping error on 0-1 scale for dynamic power
    if (errdp > 0.5 or errdp < -0.5):
       if (angles_dyn[decode4] < 180):
-         errordp = 1 + normal_response_dyn[decode4] - xppdd
+         errordp = normal_response_dyn[decode4] - xppdd
          epsilondnap.append(np.absolute(errordp))
       elif(angles_dyn[decode4] > 180):
-         errordp = 1 - normal_response_dyn[decode4] - xppdd
+         errordp = normal_response_dyn[decode4] - xppdd
          epsilondnap.append(np.absolute(errordp))
    else:
       epsilondnap.append(np.absolute(errdp))
    decode4 = decode4+1
-"""
+
+epsilonl = []
+epsilonp = [] 
 decode5 = 0
 while decode5 <= len(normal_response)-1:
    #computing static error
-   valsd = Arduino_Magl(angles_stat[decode5])
-   estsd = intensity_estimate_adjusted(valsd, S0, S1)
+   valsd = Arduino_Magl(angles[decode5])
+   estsd = intensity_estimate_adjusted(valsd, SL, SP)
    xllsd = estsd[0]
    xppsd = estsd[1]
-   errsl = normal_response_stat[decode5] - xllsd
-   errsp = normal_response_stat[decode5] - xppsd
+   errsl = normal_response[decode5] - xllsd
+   errsp = normal_response[decode5] - xppsd
 
    #wrapping of error on 0-1 scale for static linear
    if (errsl > 0.5 or errsl < -0.5):
-      if (angles_stat[decode5] < 180):
-         errorsl = 1 + normal_response_stat[decode5] - xllsd
+      if (angles[decode5] < 180):
+         errorsl = normal_response[decode5] - xllsd
          epsilonl.append(np.absolute(errorsl))
-      elif(angles_stat[decode5] > 180):
-         errorsl = 1 - normal_response_stat[decode5] - xllsd
+      elif(angles[decode5] > 180):
+         errorsl = normal_response[decode5] - xllsd
          epsilonl.append(np.absolute(errorsl))
    else:
-      epsilonsl.append(np.absolute(errsl))
+      epsilonl.append(np.absolute(errsl))
    #wrapping error on 0-1 scale for static power
    if (errsp > 0.5 or errsp < -0.5):
-      if (angles_stat[decode5] < 180):
-         errorsp = 1 + normal_response_stat[decode5] - xppsd
+      if (angles[decode5] < 180):
+         errorsp = normal_response[decode5] - xppsd
          epsilonp.append(np.absolute(errorsp))
-      elif(angles_stat[decode5] > 180):
-         errorp = 1 - normal_response_stat[decode5] - xppsd
+      elif(angles[decode5] > 180):
+         errorp = normal_response[decode5] - xppsd
          epsilonp.append(np.absolute(errorsp))
    else:
       epsilonp.append(np.absolute(errsp))
    decode5 = decode5+1
-"""
+
 #print(np.mean(epsilonl), np.mean(epsilonp))
 #print("\n")
 meansl = np.mean(epsilonsl)
@@ -681,6 +734,11 @@ stdsnap = np.std(epsilonsnap)
 stddnal = np.std(epsilondnal)
 stddnap = np.std(epsilondnap)
 
+linear_epsilon_mean = np.mean(epsilonl)
+power_epsilon_mean = np.mean(epsilonp)
+linear_epsilon_std = np.std(epsilonl)
+power_epsilon_std = np.std(epsilonp)
+
 print("L Mean","L STD", "P Mean","P STD")
 print("Adjusted Models")
 print("\n")
@@ -701,10 +759,10 @@ vardl = np.var(epsilondl)
 vardp = np.var(epsilondp)
 #print(varsl, varsp ,vardl, vardp)
 #print("\n")
-stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=False)
-dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=False)
-sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=False)
-spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=False)
+stlp = stats.ttest_ind(a=epsilonsl, b=epsilonsp, equal_var=True)
+dtlp = stats.ttest_ind(a=epsilondl, b=epsilondp, equal_var=True)
+sldl = stats.ttest_ind(a=epsilonsl, b=epsilondl, equal_var=True)
+spdp = stats.ttest_ind(a=epsilonsp, b=epsilondp, equal_var=True)
 
 print("Statistic Results")
 print(stlp)
@@ -717,14 +775,14 @@ print("\n")
 print("Adj Stat v Dyn Power")
 print(spdp)
 
-snaldnal = stats.ttest_ind(a=epsilonsnal, b=epsilondnal, equal_var=False)
-snapdnap = stats.ttest_ind(a=epsilonsnap, b=epsilondnap, equal_var=False)
-snalsnap = stats.ttest_ind(a=epsilonsnal, b=epsilonsnap, equal_var=False)
-dnaldnap = stats.ttest_ind(a=epsilondnal, b=epsilondnap, equal_var=False)
-snalsl = stats.ttest_ind(a=epsilonsnal, b=epsilonsl, equal_var=False)
-dnaldl = stats.ttest_ind(a=epsilondnal, b=epsilondl, equal_var=False)
-snapsp = stats.ttest_ind(a=epsilonsnap, b=epsilonsp, equal_var=False)
-dnapdp = stats.ttest_ind(a=epsilondnap, b=epsilondp, equal_var=False)
+snaldnal = stats.ttest_ind(a=epsilonsnal, b=epsilondnal, equal_var=True)
+snapdnap = stats.ttest_ind(a=epsilonsnap, b=epsilondnap, equal_var=True)
+snalsnap = stats.ttest_ind(a=epsilonsnal, b=epsilonsnap, equal_var=True)
+dnaldnap = stats.ttest_ind(a=epsilondnal, b=epsilondnap, equal_var=True)
+snalsl = stats.ttest_ind(a=epsilonsnal, b=epsilonsl, equal_var=True)
+dnaldl = stats.ttest_ind(a=epsilondnal, b=epsilondl, equal_var=True)
+snapsp = stats.ttest_ind(a=epsilonsnap, b=epsilonsp, equal_var=True)
+dnapdp = stats.ttest_ind(a=epsilondnap, b=epsilondp, equal_var=True)
 print("\n")
 print("Gen Stat v Dyn Lin")
 print(snaldnal)
@@ -784,18 +842,51 @@ print(effadjdlgendl)
 print("\n")
 print("Adj Dyn v Gen Dyn Power")
 print(effadjdpgendp)
-                               
-"""
-#write error data to csv for use in R
-headers = ["Static_Linear", "Static_Power", "Dynamic_Linear", "Dynamic_Power", "Adjusted_Static_Linear", "Adjusted_Static_Power", "Adjusted_Dynamic_Linear", "Adjusted_Dynamic_Power"]
-name = DIR+"perception_errors.csv"
-with open(name, 'w') as csvfile:
-   testwriter = csv.writer(csvfile, delimiter = ',')
-   testwriter.writerow(headers)
 
-epsilon_data = [epsilonsnal, epsilonsnap, epsilondnal, epsilondnap, epsilonsl, epsilonsp, epsilondl, epsilondp]
+normal_static_V_gen_lin = stats.ttest_ind(a = normal_static_epsilon, b = epsilonsnal, equal_var =True)
+normal_static_V_gen_power = stats.ttest_ind(a = normal_static_epsilon, b = epsilonsnap, equal_var = True)
+normal_static_V_adj_lin = stats.ttest_ind(a = normal_static_epsilon, b = epsilonsl, equal_var = True)
+normal_static_V_adj_power = stats.ttest_ind(a = normal_static_epsilon, b = epsilonsp, equal_var = True)
 
-with open(name, 'a') as csvfile:
-   testwriter = csv.writer(csvfile, delimiter = ',')
-   testwriter.writerows(epsilon_data)
-"""
+normal_dynamic_V_gen_lin = stats.ttest_ind(a = normal_dynamic_epsilon, b = epsilondnal, equal_var = True)
+normal_dynamic_V_gen_power = stats.ttest_ind(a = normal_dynamic_epsilon, b = epsilondnap, equal_var = True)
+normal_dynamic_V_adj_lin = stats.ttest_ind(a = normal_dynamic_epsilon, b = epsilondl, equal_var = True)
+normal_dynamic_V_adj_power = stats.ttest_ind(a = normal_dynamic_epsilon, b = epsilondp, equal_var = True)
+
+normal_static_V_normal_dynamic = stats.ttest_ind(a = normal_static_epsilon, b = epsilonsl, equal_var = True)
+print("\n")
+print("\n")
+print("T-tests for comparing static models with actual static response")
+print(normal_static_V_gen_lin)
+print("\n")
+print(normal_static_V_gen_power)
+print("\n")
+print(normal_static_V_adj_lin)
+print("\n")
+print(normal_static_V_adj_power)
+print("\n")
+print("T-tests for comparing dynamic models with actual dynamic response")
+print(normal_dynamic_V_gen_lin)
+print("\n")
+print(normal_dynamic_V_gen_power)
+print("\n")
+print(normal_dynamic_V_adj_lin)
+print("\n")
+print(normal_dynamic_V_adj_power)
+print("\n")
+print("\n")
+print(normal_static_V_normal_dynamic)
+print("\n")
+print("\n")
+print("Means and STD of all data model")
+print(normal_static_mean, normal_static_std)
+print("\n")
+print(normal_dynamic_mean, normal_dynamic_std)
+print("\n")
+
+fig = plt.figure("Figure 1")
+plt.scatter(normal_angles_stat, normal_static_epsilon, linewidth = 2.0)
+plt.scatter(normal_response_stat, epsilonsl, linewidth = 2.0, color = 'r')
+
+plt.show()
+
